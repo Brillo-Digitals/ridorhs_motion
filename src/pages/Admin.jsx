@@ -18,6 +18,28 @@ async function sha256(message) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Auto-converts any YouTube URL to embed format
+function convertToEmbed(url) {
+    if (!url) return url;
+    try {
+        const u = new URL(url);
+        let videoId = null;
+
+        // Already an embed link
+        if (u.pathname.includes('/embed/')) return url;
+
+        // Shorts: youtube.com/shorts/ID
+        const shortsMatch = u.pathname.match(/\/shorts\/([\w-]+)/);
+        if (shortsMatch) videoId = shortsMatch[1];
+
+        // Standard watch: youtube.com/watch?v=ID or youtu.be/ID
+        if (!videoId) videoId = u.searchParams.get('v') || (u.hostname === 'youtu.be' ? u.pathname.slice(1) : null);
+
+        if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+    } catch { /* fall through */ }
+    return url;
+}
+
 const EMPTY_FORM = {
     title: '',
     description: '',
@@ -246,19 +268,17 @@ export default function Admin() {
 
     const fetchVideos = async () => {
         if (!JSONBIN_URL) {
-            showStatus('warning', 'JSONBin is not configured. Add env variables to connect.');
+            showStatus('warning', 'JSONBin not configured. Restart dev server after adding .env file.');
             return;
         }
         setIsLoading(true);
         try {
-            const response = await fetch(`${JSONBIN_URL}/latest`, {
-                headers: { 'X-Master-Key': import.meta.env.VITE_JSONBIN_API_KEY || '' }
-            });
-            if (!response.ok) throw new Error('Failed to fetch');
+            const response = await fetch(`${JSONBIN_URL}/latest`);
+            if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
             const data = await response.json();
             setVideos(data.record?.videos || []);
-        } catch {
-            showStatus('error', 'Error fetching videos from JSONBin.');
+        } catch (err) {
+            showStatus('error', err.message || 'Error fetching videos from JSONBin.');
         } finally {
             setIsLoading(false);
         }
@@ -269,28 +289,38 @@ export default function Admin() {
         const response = await fetch(JSONBIN_URL, {
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/json',
-                'X-Master-Key': import.meta.env.VITE_JSONBIN_API_KEY || ''
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ videos: updatedVideos })
         });
-        if (!response.ok) throw new Error('Failed to save');
+        if (!response.ok) {
+            const errBody = await response.text().catch(() => response.statusText);
+            throw new Error(`JSONBin error ${response.status}: ${errBody}`);
+        }
         return updatedVideos;
     };
 
     // ── Add ───────────────────────────────────────────────────────────────────
     const handleAddVideo = async (e) => {
         e.preventDefault();
-        if (!JSONBIN_URL) { showStatus('error', 'JSONBin is not configured.'); return; }
+        if (!JSONBIN_URL) {
+            showStatus('error', 'JSONBin not configured. Restart dev server after adding .env file.');
+            return;
+        }
         setIsSaving(true);
-        const newVideo = { ...formData, id: `v-${Date.now()}` };
+        const newVideo = {
+            ...formData,
+            youtubeLink: convertToEmbed(formData.youtubeLink),
+            id: `v-${Date.now()}`
+        };
         try {
             const updated = await pushToJSONBin([newVideo, ...videos]);
             setVideos(updated);
             setFormData({ ...EMPTY_FORM });
             showStatus('success', `"${newVideo.title}" added successfully!`);
-        } catch {
-            showStatus('error', 'Failed to save video to database.');
+        } catch (err) {
+            console.error(err);
+            showStatus('error', err.message || 'Failed to save video to database.');
         } finally {
             setIsSaving(false);
         }
@@ -299,15 +329,20 @@ export default function Admin() {
     // ── Update / Edit ─────────────────────────────────────────────────────────
     const handleUpdateVideo = async (updatedVideo) => {
         setIsSaving(true);
+        const videoToSave = {
+            ...updatedVideo,
+            youtubeLink: convertToEmbed(updatedVideo.youtubeLink)
+        };
         try {
             const updated = await pushToJSONBin(
-                videos.map(v => v.id === updatedVideo.id ? updatedVideo : v)
+                videos.map(v => v.id === videoToSave.id ? videoToSave : v)
             );
             setVideos(updated);
             setEditingVideo(null);
-            showStatus('success', `"${updatedVideo.title}" updated successfully!`);
-        } catch {
-            showStatus('error', 'Failed to update video.');
+            showStatus('success', `"${videoToSave.title}" updated successfully!`);
+        } catch (err) {
+            console.error(err);
+            showStatus('error', err.message || 'Failed to update video.');
         } finally {
             setIsSaving(false);
         }
@@ -322,8 +357,9 @@ export default function Admin() {
             setVideos(updated);
             showStatus('success', `"${deletingVideo.title}" removed.`);
             setDeletingVideo(null);
-        } catch {
-            showStatus('error', 'Failed to delete video.');
+        } catch (err) {
+            console.error(err);
+            showStatus('error', err.message || 'Failed to delete video.');
         } finally {
             setIsSaving(false);
         }

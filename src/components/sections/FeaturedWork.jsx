@@ -20,11 +20,7 @@ export default function FeaturedWork() {
                 return;
             }
             try {
-                const response = await fetch(JSONBIN_URL, {
-                    headers: {
-                        'X-Master-Key': import.meta.env.VITE_JSONBIN_API_KEY || ''
-                    }
-                });
+                const response = await fetch(JSONBIN_URL);
                 if (response.ok) {
                     const data = await response.json();
                     // Take the first 3 videos as featured

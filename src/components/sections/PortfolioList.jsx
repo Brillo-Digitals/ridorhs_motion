@@ -64,11 +64,7 @@ export default function PortfolioList() {
             }
 
             try {
-                const response = await fetch(JSONBIN_URL, {
-                    headers: {
-                        'X-Master-Key': import.meta.env.VITE_JSONBIN_API_KEY || ''
-                    }
-                });
+                const response = await fetch(JSONBIN_URL);
 
                 if (!response.ok) throw new Error('Failed to fetch videos');
 
@@ -120,8 +116,8 @@ export default function PortfolioList() {
                                 key={cat}
                                 onClick={() => setFilter(cat)}
                                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 border ${filter === cat
-                                        ? 'bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-white shadow-[0_0_15px_rgba(122,92,255,0.4)]'
-                                        : 'bg-transparent border-[var(--color-divider)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-secondary)] hover:text-white'
+                                    ? 'bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-white shadow-[0_0_15px_rgba(122,92,255,0.4)]'
+                                    : 'bg-transparent border-[var(--color-divider)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-secondary)] hover:text-white'
                                     }`}
                             >
                                 {cat}
