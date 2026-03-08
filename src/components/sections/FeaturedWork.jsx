@@ -1,39 +1,50 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SectionHeader from '../SectionHeader';
 import VideoCard from '../VideoCard';
 import Modal from '../Modal';
 
-const featuredProjects = [
-    {
-        id: 1,
-        title: "Cyberpunk City Ad",
-        description: "A highly stylized, 3D integrated commercial piece utilizing advanced compositing in After Effects and dynamic editing.",
-        youtubeLink: "https://www.youtube.com/embed/dQw4w9WgXcQ", // Placeholder, user will update via JSONBin
-        category: "Commercial",
-    },
-    {
-        id: 2,
-        title: "Esports Tournament Intro",
-        description: "Kinetic typography, glitch effects, and high-energy motion design created for a major gaming tournament.",
-        youtubeLink: "https://www.youtube.com/embed/jNQXAC9IVRw", // Placeholder
-        category: "Motion Graphics",
-    },
-    {
-        id: 3,
-        title: "Tech Product Launch",
-        description: "Sleek and minimal 3D product visualization mixed with smooth 2D motion graphics and UI animation.",
-        youtubeLink: "https://www.youtube.com/embed/2ZIpFytCSVc", // Placeholder
-        category: "Product Promo",
-    }
-];
+const JSONBIN_URL = import.meta.env.VITE_JSONBIN_BIN_ID
+    ? `https://api.jsonbin.io/v3/b/${import.meta.env.VITE_JSONBIN_BIN_ID}/latest`
+    : null;
 
 export default function FeaturedWork() {
     const [selectedVideo, setSelectedVideo] = useState(null);
+    const [featuredProjects, setFeaturedProjects] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchFeatured = async () => {
+            if (!JSONBIN_URL) {
+                setIsLoading(false);
+                return;
+            }
+            try {
+                const response = await fetch(JSONBIN_URL, {
+                    headers: {
+                        'X-Master-Key': import.meta.env.VITE_JSONBIN_API_KEY || ''
+                    }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    // Take the first 3 videos as featured
+                    setFeaturedProjects((data.record?.videos || []).slice(0, 3));
+                }
+            } catch (err) {
+                console.error("Error fetching featured work:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchFeatured();
+    }, []);
 
     const handleVideoClick = (video) => {
         setSelectedVideo(video);
     };
+
+    if (isLoading) return null;
+    if (featuredProjects.length === 0) return null;
 
     return (
         <section id="featured" className="py-24 bg-[var(--color-primary)] relative">
