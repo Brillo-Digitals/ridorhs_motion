@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0B0B0B;
+  --color-secondary: #161616;
+  --color-accent-primary: #7A5CFF;
+  --color-accent-secondary: #00E5FF;
+  --color-highlight: #4C7BFF;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #B5B5B5;
+  --color-divider: #2A2A2A;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-poppins: 'Poppins', system-ui, sans-serif;
+}
+
+/* Custom base styles mapping onto theme variables */
+:root {
+  font-family: var(--font-sans);
+  background-color: var(--color-primary);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--color-primary);
+  color: var(--color-text-primary);
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-poppins);
+}
+
+/* Base selection color */
+::selection {
+  background: var(--color-accent-primary);
+  color: #fff;
+}
+
+/* Base utility for hiding scrollbar if needed */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
